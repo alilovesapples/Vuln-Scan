@@ -7,11 +7,9 @@ A free, open-source tool to detect security vulnerabilities in:
 - Any text-based file
 
 ## Usage
-
-1. Visit: https://yourusername.github.io/vulnscan/
-2. Upload a file or paste code
-3. Click "RUN SCAN"
-4. View findings and fixes
+1. Upload a file or paste code
+2. Click "RUN SCAN"
+3. View findings and fixes
 
 ## Features
 
