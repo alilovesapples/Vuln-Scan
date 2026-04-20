@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnScan</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#080b0e;color:#c8d4e0;font-family:Segoe UI,Tahoma,sans-serif;}
+.header{background:#050810;border-bottom:1px solid #0f1620;padding:0 32px;display:flex;justify-content:space-between;align-items:center;height:58px;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#ff3b3b,#ff8c00);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-text{font-weight:700;font-size:16px;}
+.container{max-width:900px;margin:0 auto;padding:40px 20px;}
+h1{font-size:30px;margin-bottom:8px;}
+.sub{color:#445566;font-size:13px;margin-bottom:32px;}
+.tabs{display:flex;border-bottom:1px solid #0f1620;margin-bottom:20px;}
+.tab{background:none;border:none;padding:10px 24px;color:#445566;cursor:pointer;font-size:14px;font-weight:600;border-bottom:2px solid transparent;}
+.tab.active{color:#c8d4e0;border-bottom-color:#ff8c00;}
+.upload-zone{border:2px dashed #1a2535;border-radius:12px;padding:60px 40px;text-align:center;cursor:pointer;background:#070a0f;margin-bottom:20px;transition:border-color .2s,background .2s;}
+.upload-zone:hover,.upload-zone.over{border-color:#ff8c00;background:#130e00;}
+.upload-zone.done{border-color:#4ade80;background:#070f0a;}
+.upload-icon{font-size:48px;margin-bottom:12px;}
+.upload-label{color:#667788;font-size:16px;font-weight:600;margin-bottom:6px;}
+.upload-hint{color:#2a3a4a;font-size:13px;}
+textarea{width:100%;height:280px;background:#070a0f;border:1px solid #1a2535;border-radius:10px;color:#8ab0c8;padding:16px;font-family:Courier New,monospace;font-size:13px;resize:vertical;outline:none;margin-bottom:20px;}
+textarea::placeholder{color:#334455;}
+.btn-scan{width:100%;padding:14px;background:linear-gradient(135deg,#b32000,#e85500);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.08em;}
+.section{display:none;}
+.section.visible{display:block;}
+.spinning{text-align:center;padding:80px 20px;}
+.spin{font-size:48px;display:inline-block;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.scan-label{color:#ff8c00;font-family:Courier New,monospace;font-size:14px;margin-top:16px;}
+.results-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.results-top h2{font-size:20px;}
+.results-sub{color:#334455;font-size:12px;font-family:Courier New,monospace;}
+.btn-new{background:#0a0e14;border:1px solid #1a2535;color:#667788;border-radius:7px;padding:8px 16px;font-size:12px;cursor:pointer;}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin-bottom:24px;}
+.scard{background:#0d1014;border:1px solid #1a2230;border-radius:8px;padding:14px;text-align:center;}
+.scard.c{border-color:#ff3b3b44;}
+.scard.h{border-color:#ff8c0044;}
+.scard.m{border-color:#f5c40044;}
+.scard.l{border-color:#4fc3f744;}
+.snum{font-size:28px;font-weight:800;color:#4a6070;font-family:Courier New,monospace;}
+.scard.c .snum{color:#ff3b3b;}
+.scard.h .snum{color:#ff8c00;}
+.scard.m .snum{color:#f5c400;}
+.scard.l .snum{color:#4fc3f7;}
+.slabel{font-size:9px;letter-spacing:.12em;color:#334455;font-weight:700;margin-top:4px;}
+.scard.c .slabel{color:#ff3b3b88;}
+.scard.h .slabel{color:#ff8c0088;}
+.scard.m .slabel{color:#f5c40088;}
+.scard.l .slabel{color:#4fc3f788;}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.fbtn{background:#0a0e14;border:1px solid #1a2535;color:#3a4a5a;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;}
+.fbtn.active{background:#141c28;color:#c8d4e0;border-color:#667788;}
+.finding{border-left:3px solid #ff8c00;background:#0f1317;border-radius:0 6px 6px 0;margin-bottom:3px;overflow:hidden;}
+.finding.CRITICAL{border-left-color:#ff3b3b;}
+.finding.HIGH{border-left-color:#ff8c00;}
+.finding.MEDIUM{border-left-color:#f5c400;}
+.finding.LOW{border-left-color:#4fc3f7;}
+.fhead{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;}
+.fidx{color:#444;font-size:11px;font-family:Courier New,monospace;min-width:22px;}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+.badge.CRITICAL{background:#7a0000;color:#ff3b3b;}
+.badge.HIGH{background:#5a2d00;color:#ff8c00;}
+.badge.MEDIUM{background:#4a3a00;color:#f5c400;}
+.badge.LOW{background:#003348;color:#4fc3f7;}
+.flabel{color:#d4dae4;font-size:13px;flex:1;}
+.fline{color:#556070;font-size:11px;font-family:Courier New,monospace;}
+.farrow{color:#334;font-size:12px;transition:transform .2s;}
+.finding.open .farrow{transform:rotate(90deg);}
+.fdetail{display:none;border-top:1px solid rgba(255,140,0,.15);padding:14px;}
+.finding.open .fdetail{display:block;}
+.ftag{font-size:10px;color:#334455;letter-spacing:.08em;font-family:Courier New,monospace;margin-bottom:6px;}
+.fcode{background:#06090d;border-radius:4px;padding:8px 12px;font-family:Courier New,monospace;font-size:11px;color:#ff8c00;overflow-x:auto;white-space:nowrap;border:1px solid rgba(255,140,0,.2);margin-bottom:14px;}
+.dtabs{display:flex;border-bottom:1px solid #111820;margin-bottom:12px;}
+.dtab{background:none;border:none;padding:7px 16px;font-size:11px;font-weight:600;color:#3a4a5a;cursor:pointer;border-bottom:2px solid transparent;}
+.dtab.active{color:#c8d4e0;border-bottom-color:#ff8c00;}
+.dcontent{display:none;color:#7a8fa8;font-size:12px;line-height:1.7;}
+.dcontent.active{display:block;}
+.fixbox{padding:10px 12px;background:#080f18;border-radius:6px;border-left:3px solid rgba(255,140,0,.5);color:#90aec8;font-size:12px;line-height:1.6;margin-bottom:12px;}
+.steps{margin-bottom:12px;}
+.step{display:flex;gap:8px;margin-bottom:5px;}
+.stepnum{color:#ff8c00;font-family:Courier New,monospace;font-size:11px;min-width:16px;}
+.steptext{color:#7a8fa8;font-size:11px;line-height:1.6;}
+.codeblocks{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.cblabel{font-size:10px;font-family:Courier New,monospace;font-weight:600;margin-bottom:5px;}
+.cblabel.bad{color:#cc3333;}
+.cblabel.good{color:#3a9a6a;}
+pre{background:#060810;border-radius:6px;padding:10px;font-family:Courier New,monospace;font-size:10px;border:1px solid #141e2a;white-space:pre-wrap;word-wrap:break-word;margin:0;}
+.pre-bad{color:#e07070;}
+.pre-good{color:#6ee7b7;}
+.empty{text-align:center;padding:60px;color:#1e2a38;}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <span class="logo-text">VulnScan</span>
+    <span style="color:#1e2a38;font-size:13px;">Universal</span>
+  </div>
+  <span style="font-family:Courier New,monospace;font-size:10px;color:#1e2a38;">50+ RULES • All OS • All Formats</span>
+</div>
+
+<div class="container">
+
+  <!-- UPLOAD SECTION -->
+  <div id="secUpload" class="section visible">
+    <h1>Vulnerability Scanner</h1>
+    <p class="sub">Scans any file • Code, Docker, K8s, Swagger, YAML, JSON, .env and more • 50+ rules with step-by-step fixes</p>
+
+    <div class="tabs">
+      <button class="tab active" id="tabUpload" onclick="switchTab('upload')">📁 Upload File</button>
+      <button class="tab" id="tabPaste" onclick="switchTab('paste')">📋 Paste Code</button>
+    </div>
+
+    <div id="zoneUpload">
+      <div class="upload-zone" id="dropzone"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="ev.preventDefault();ev.stopPropagation();document.getElementById('dropzone').classList.add('over');"
+        ondragleave="document.getElementById('dropzone').classList.remove('over');"
+        ondrop="onDrop(event)">
+        <input type="file" id="fileInput" style="display:none" onchange="onFileChange(event)">
+        <div class="upload-icon" id="upIcon">📄</div>
+        <div class="upload-label" id="upLabel">Drop file or click to browse</div>
+        <div class="upload-hint" id="upHint">Any file type supported</div>
+      </div>
+    </div>
+
+    <div id="zonePaste" style="display:none">
+      <textarea id="pasteArea" placeholder="Paste code, YAML, JSON, Dockerfile, Swagger, .env..."></textarea>
+    </div>
+
+    <button class="btn-scan" onclick="startScan()">▶ RUN SCAN</button>
+  </div>
+
+  <!-- SCANNING SECTION -->
+  <div id="secScanning" class="section">
+    <div class="spinning">
+      <div class="spin">⚙️</div>
+      <div class="scan-label">SCANNING...</div>
+    </div>
+  </div>
+
+  <!-- RESULTS SECTION -->
+  <div id="secResults" class="section">
+    <div class="results-top">
+      <div>
+        <h2>Scan Results</h2>
+        <div class="results-sub" id="resCount">0 findings</div>
+      </div>
+      <button class="btn-new" onclick="resetAll()">← New Scan</button>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="filters" id="filters"></div>
+    <div id="findingsList"></div>
+  </div>
+
+</div>
+
+<script>
+// ---- STATE ----
+var fileContent = '';
+var currentTab = 'upload';
+var allFindings = [];
+var currentFilter = 'ALL';
+
+// ---- RULES ----
+var RULES = [
+  {id:'pw',sev:'CRITICAL',cat:'Secrets',lbl:'Hardcoded Password',
+   rx:/(?:password|passwd|pwd)\s*[:=]\s*["'][^"']{3,}["']/gi,
+   desc:'Hardcoded passwords are exposed to anyone who can see your source code or repo.',
+   fix:{sum:'Move credentials to environment variables.',
+        steps:['Delete the hardcoded value now','Set it as an environment variable','Rotate the password - assume it is compromised'],
+        bad:'password = "SuperSecret123!"',good:'password = process.env.DB_PASSWORD'}},
+
+  {id:'token',sev:'CRITICAL',cat:'Secrets',lbl:'Hardcoded API Token / Secret',
+   rx:/(?:secret|token|api_?key|auth_?key)\s*[:=]\s*["'][A-Za-z0-9\/+_\-]{8,}["']/gi,
+   desc:'Tokens and API keys hardcoded in code can be scraped from repos and abused.',
+   fix:{sum:'Store all tokens in environment variables.',
+        steps:['Revoke and rotate the token immediately','Remove from source','Load via process.env'],
+        bad:'api_key = "sk_live_xK9mZ2pQwRtY8nVb"',good:'api_key = process.env.API_KEY'}},
+
+  {id:'pkey',sev:'CRITICAL',cat:'Secrets',lbl:'Private Key Found',
+   rx:/-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/g,
+   desc:'A private cryptographic key is embedded in source. Anyone who reads it can impersonate your server.',
+   fix:{sum:'Never embed private keys in code.',
+        steps:['Revoke and regenerate the key pair NOW','Store in a secrets manager or HSM','Load from environment at runtime'],
+        bad:'-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAK...',good:'const key = fs.readFileSync(process.env.KEY_PATH)'}},
+
+  {id:'aws',sev:'CRITICAL',cat:'Secrets',lbl:'AWS Access Key ID',
+   rx:/AKIA[0-9A-Z]{16}/g,
+   desc:'AWS keys exposed in code are scraped and abused within minutes of being pushed.',
+   fix:{sum:'Revoke immediately and switch to IAM Roles.',
+        steps:['Deactivate key in AWS IAM Console NOW','Check CloudTrail for abuse','Use IAM Role instead of access keys'],
+        bad:'AWS_KEY = "AKIAIOSFODNN7EXAMPLE"',good:'# Attach IAM Role to your EC2/Lambda instead'}},
+
+  {id:'mongo',sev:'CRITICAL',cat:'Secrets',lbl:'MongoDB Connection String with Credentials',
+   rx:/mongodb(?:\+srv)?:\/\/[^:]+:[^@]+@[^\s"'<>]+/gi,
+   desc:'Database credentials are exposed in the connection string.',
+   fix:{sum:'Store connection string in environment variable.',
+        steps:['Remove from code','Add to .env file (gitignored)','Use process.env.MONGODB_URI'],
+        bad:'const uri = "mongodb://admin:pass@db.host.com"',good:'const uri = process.env.MONGODB_URI'}},
+
+  {id:'jwt',sev:'CRITICAL',cat:'Secrets',lbl:'Hardcoded JWT Secret',
+   rx:/(?:jwt|jwtSecret)\s*[:=]\s*["'][A-Za-z0-9\/+_\-=]{20,}["']/gi,
+   desc:'Hardcoded JWT secret allows anyone to forge valid tokens for any user.',
+   fix:{sum:'Load JWT secret from environment only.',
+        steps:['Move to env var','Use 256-bit random secret','Rotate it now'],
+        bad:'const secret = "my-super-secret-jwt-key"',good:'const secret = process.env.JWT_SECRET'}},
+
+  {id:'gh',sev:'CRITICAL',cat:'Secrets',lbl:'GitHub Token',
+   rx:/gh[pousr]_[A-Za-z0-9_]{36,}/g,
+   desc:'GitHub personal access token exposed. Full repo and account access possible.',
+   fix:{sum:'Revoke token immediately.',
+        steps:['Revoke in GitHub Settings > Developer Settings','Remove from code','Use GitHub Actions secrets for CI'],
+        bad:'token = "ghp_1234567890abcdefghijklmnopqrstuvwxyz"',good:'token = process.env.GITHUB_TOKEN'}},
+
+  {id:'slack',sev:'CRITICAL',cat:'Secrets',lbl:'Slack / Discord Webhook',
+   rx:/https:\/\/(?:hooks\.slack\.com|discord(?:app)?\.com\/api\/webhooks)[\/\w\-]+/g,
+   desc:'Webhook URL exposed allows attackers to send messages or extract data.',
+   fix:{sum:'Store webhook URL in environment.',
+        steps:['Regenerate the webhook','Remove from code','Use env var'],
+        bad:'const url = "https://hooks.slack.com/services/T0000/B0000/xxxx"',good:'const url = process.env.WEBHOOK_URL'}},
+
+  {id:'eval',sev:'HIGH',cat:'Code Injection',lbl:'eval() Usage',
+   rx:/\beval\s*\(/g,
+   desc:'eval() executes arbitrary code. If user input reaches it, attackers get full code execution.',
+   fix:{sum:'Replace eval() with safe alternatives.',
+        steps:['Use JSON.parse() for JSON data','Use a sandboxed library for expressions','Never pass user input to eval'],
+        bad:'const result = eval(userInput)',good:'const result = JSON.parse(userInput)'}},
+
+  {id:'exec',sev:'HIGH',cat:'Command Injection',lbl:'Shell Command Execution',
+   rx:/\b(?:exec|shell_exec|system|popen|subprocess\.call|os\.system)\s*\(/g,
+   desc:'Running shell commands with user input allows command injection attacks.',
+   fix:{sum:'Use execFile() with an argument array instead of exec().',
+        steps:['Replace exec(string) with execFile(cmd, [args])','Validate all input before use','Never build shell strings from user data'],
+        bad:'exec("ping -c 1 " + userHost)',good:'execFile("ping", ["-c", "1", userHost])'}},
+
+  {id:'sql',sev:'HIGH',cat:'SQL Injection',lbl:'SQL String Concatenation',
+   rx:/(?:SELECT|INSERT|UPDATE|DELETE)\s+[\s\S]{0,60}["'\s]\+/gi,
+   desc:'Building SQL with string concatenation allows attackers to inject and run arbitrary SQL.',
+   fix:{sum:'Use parameterized queries or an ORM.',
+        steps:['Replace string building with ? placeholders','Pass values as array to query()','Use ORM like Prisma or Sequelize'],
+        bad:'db.query("SELECT * FROM users WHERE id = " + id)',good:'db.query("SELECT * FROM users WHERE id = ?", [id])'}},
+
+  {id:'xss',sev:'HIGH',cat:'XSS',lbl:'innerHTML Assignment',
+   rx:/\.innerHTML\s*=/g,
+   desc:'Setting innerHTML with untrusted data allows script injection (XSS) attacks.',
+   fix:{sum:'Use textContent for plain text or DOMPurify for HTML.',
+        steps:['Use el.textContent = value for plain text','For HTML: import DOMPurify and sanitize first'],
+        bad:'el.innerHTML = userComment',good:'el.textContent = userComment\n// or: el.innerHTML = DOMPurify.sanitize(userComment)'}},
+
+  {id:'md5',sev:'MEDIUM',cat:'Cryptography',lbl:'MD5 Hashing',
+   rx:/\bmd5\s*\(/gi,
+   desc:'MD5 is cryptographically broken. Do not use it for passwords or security checks.',
+   fix:{sum:'Use SHA-256 for checksums, bcrypt/argon2 for passwords.',
+        steps:['Replace md5() with sha256() for non-passwords','For passwords: use bcrypt.hash(pwd, 12)'],
+        bad:'const hash = md5(password)',good:'const hash = await bcrypt.hash(password, 12)'}},
+
+  {id:'sha1',sev:'MEDIUM',cat:'Cryptography',lbl:'SHA-1 Hashing',
+   rx:/\bsha1\s*\(/gi,
+   desc:'SHA-1 has known collision vulnerabilities and should not be used for security.',
+   fix:{sum:'Upgrade to SHA-256.',
+        steps:['Replace sha1 with sha256'],
+        bad:'crypto.createHash("sha1").update(data)',good:'crypto.createHash("sha256").update(data)'}},
+
+  {id:'rand',sev:'MEDIUM',cat:'Cryptography',lbl:'Insecure Random (Math.random)',
+   rx:/Math\.random\s*\(\)/g,
+   desc:'Math.random() is not cryptographically secure. Tokens generated with it can be predicted.',
+   fix:{sum:'Use crypto.randomBytes() for secure random values.',
+        steps:['Replace Math.random() with crypto.randomBytes(32)'],
+        bad:'const token = Math.random().toString(36)',good:'const token = require("crypto").randomBytes(32).toString("hex")'}},
+
+  {id:'http',sev:'MEDIUM',cat:'Transport Security',lbl:'HTTP URL (not HTTPS)',
+   rx:/http:\/\/(?!localhost|127\.0\.0\.1)/g,
+   desc:'HTTP transmits data in plain text. Switch to HTTPS.',
+   fix:{sum:'Use HTTPS for all external URLs.',
+        steps:['Change http:// to https://','Ensure target server has valid TLS cert'],
+        bad:'const url = "http://api.example.com"',good:'const url = "https://api.example.com"'}},
+
+  {id:'trav',sev:'MEDIUM',cat:'Path Traversal',lbl:'Path Traversal (..) Pattern',
+   rx:/\.\.[\/\\]/g,
+   desc:'../ sequences can let attackers escape the intended directory and read arbitrary files.',
+   fix:{sum:'Resolve and validate the path stays inside the base directory.',
+        steps:['Use path.resolve() to normalize','Check the result starts with your base directory','Never pass raw user input to file APIs'],
+        bad:'fs.readFileSync("./uploads/" + userInput)',good:'const safe = path.resolve(BASE, userInput)\nif (!safe.startsWith(BASE)) throw new Error("Invalid path")\nfs.readFileSync(safe)'}},
+
+  {id:'yaml',sev:'CRITICAL',cat:'Config',lbl:'YAML Config: Hardcoded Secret',
+   rx:/(?:password|secret|token|key|credential)\s*:\s*["']?[A-Za-z0-9_\-\/+]{8,}["']?/gi,
+   desc:'Secrets hardcoded in YAML config files are exposed to anyone with repo access.',
+   fix:{sum:'Use environment variable references in config files.',
+        steps:['Remove the value','Reference via env var or secrets manager'],
+        bad:'database_password: "SuperPass123"',good:'database_password: ${DATABASE_PASSWORD}'}},
+
+  {id:'log',sev:'LOW',cat:'Information Disclosure',lbl:'Debug Logging',
+   rx:/\b(?:console\.log|console\.debug|println|print\()\b/g,
+   desc:'Debug logs can leak tokens, passwords, and PII in production environments.',
+   fix:{sum:'Remove debug logs or use a structured logger.',
+        steps:['Remove all console.log before production','Use a logger with log levels (winston, pino)','Never log secrets, tokens, or personal data'],
+        bad:'console.log("Auth token:", token)',good:'logger.info({ userId: user.id }, "Login success")'}},
+
+  {id:'todo',sev:'LOW',cat:'Code Quality',lbl:'TODO / FIXME Comment',
+   rx:/\b(?:TODO|FIXME|HACK|XXX|BUG)\b/g,
+   desc:'Unresolved development notes often mark incomplete security controls.',
+   fix:{sum:'Resolve or track in your issue tracker.',
+        steps:['Review the comment','Create a GitHub Issue if not immediately fixable','Never ship security TODOs to production'],
+        bad:'// TODO: add input validation',good:'// Input is validated via validateInput() before use'}}
+];
+
+// ---- TAB SWITCHING ----
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabUpload').className = 'tab' + (tab === 'upload' ? ' active' : '');
+  document.getElementById('tabPaste').className = 'tab' + (tab === 'paste' ? ' active' : '');
+  document.getElementById('zoneUpload').style.display = tab === 'upload' ? 'block' : 'none';
+  document.getElementById('zonePaste').style.display = tab === 'paste' ? 'block' : 'none';
+}
+
+// ---- FILE HANDLING ----
+function onDrop(ev) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  document.getElementById('dropzone').classList.remove('over');
+  var file = ev.dataTransfer.files[0];
+  if (file) readFile(file);
+}
+
+function onFileChange(ev) {
+  var file = ev.target.files[0];
+  if (file) readFile(file);
+}
+
+function readFile(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    fileContent = e.target.result;
+    document.getElementById('upIcon').textContent = '✅';
+    document.getElementById('upLabel').textContent = file.name;
+    document.getElementById('upLabel').style.color = '#4ade80';
+    document.getElementById('upHint').textContent = (file.size / 1024).toFixed(1) + ' KB — Ready to scan';
+    document.getElementById('dropzone').classList.add('done');
+  };
+  reader.onerror = function() {
+    alert('Error reading file. Please try again.');
+  };
+  reader.readAsText(file);
+}
+
+// ---- SCAN ----
+function startScan() {
+  var content = '';
+  if (currentTab === 'upload') {
+    content = fileContent;
+    if (!content) {
+      alert('Please upload a file first!');
+      return;
+    }
+  } else {
+    content = document.getElementById('pasteArea').value;
+    if (!content || !content.trim()) {
+      alert('Please paste some code first!');
+      return;
+    }
+  }
+
+  showSection('secScanning');
+
+  setTimeout(function() {
+    allFindings = runRules(content);
+    showResults();
+  }, 600);
+}
+
+function runRules(text) {
+  var lines = text.split('\n');
+  var found = [];
+  for (var r = 0; r < RULES.length; r++) {
+    var rule = RULES[r];
+    rule.rx.lastIndex = 0;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var match;
+      rule.rx.lastIndex = 0;
+      while ((match = rule.rx.exec(line)) !== null) {
+        found.push({
+          uid: rule.id + '_' + i + '_' + match.index,
+          sev: rule.sev,
+          cat: rule.cat,
+          lbl: rule.lbl,
+          desc: rule.desc,
+          fix: rule.fix,
+          lineNum: i + 1,
+          lineText: line.trim().substring(0, 120)
+        });
+      }
+    }
+  }
+  var order = {CRITICAL:0, HIGH:1, MEDIUM:2, LOW:3};
+  found.sort(function(a, b){ return order[a.sev] - order[b.sev]; });
+  return found;
+}
+
+// ---- RESULTS ----
+function showResults() {
+  currentFilter = 'ALL';
+  showSection('secResults');
+
+  var counts = {CRITICAL:0, HIGH:0, MEDIUM:0, LOW:0};
+  for (var i = 0; i < allFindings.length; i++) counts[allFindings[i].sev]++;
+
+  document.getElementById('resCount').textContent = allFindings.length + ' finding' + (allFindings.length !== 1 ? 's' : '') + ' detected';
+
+  var shtml = '';
+  var sevs = ['CRITICAL','HIGH','MEDIUM','LOW'];
+  var cls = {CRITICAL:'c',HIGH:'h',MEDIUM:'m',LOW:'l'};
+  for (var s = 0; s < sevs.length; s++) {
+    shtml += '<div class="scard ' + cls[sevs[s]] + '"><div class="snum">' + counts[sevs[s]] + '</div><div class="slabel">' + sevs[s] + '</div></div>';
+  }
+  shtml += '<div class="scard"><div class="snum">' + allFindings.length + '</div><div class="slabel">TOTAL</div></div>';
+  document.getElementById('summary').innerHTML = shtml;
+
+  var fhtml = '<button class="fbtn active" onclick="applyFilter(\'ALL\',this)">ALL</button>';
+  for (var s = 0; s < sevs.length; s++) {
+    fhtml += '<button class="fbtn" onclick="applyFilter(\'' + sevs[s] + '\',this)">' + sevs[s] + '</button>';
+  }
+  document.getElementById('filters').innerHTML = fhtml;
+
+  renderFindings();
+}
+
+function applyFilter(sev, btn) {
+  currentFilter = sev;
+  var btns = document.getElementById('filters').querySelectorAll('.fbtn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  btn.classList.add('active');
+  renderFindings();
+}
+
+function renderFindings() {
+  var list = currentFilter === 'ALL' ? allFindings : allFindings.filter(function(f){ return f.sev === currentFilter; });
+  var el = document.getElementById('findingsList');
+
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div>No findings</div></div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var f = list[i];
+    var uid = 'f_' + i;
+    var steps = '';
+    for (var s = 0; s < f.fix.steps.length; s++) {
+      steps += '<div class="step"><div class="stepnum">' + (s+1) + '.</div><div class="steptext">' + esc(f.fix.steps[s]) + '</div></div>';
+    }
+    html += '<div class="finding ' + f.sev + '" id="' + uid + '">';
+    html += '<div class="fhead" onclick="toggle(\'' + uid + '\')">';
+    html += '<div class="fidx">' + String(i+1).padStart(2,'0') + '</div>';
+    html += '<div class="badge ' + f.sev + '">' + f.sev + '</div>';
+    html += '<div class="flabel">' + esc(f.lbl) + '</div>';
+    html += '<div class="fline">L' + f.lineNum + '</div>';
+    html += '<div class="farrow">▶</div>';
+    html += '</div>';
+    html += '<div class="fdetail">';
+    html += '<div class="ftag">FLAGGED LINE</div>';
+    html += '<div class="fcode">L' + f.lineNum + ': ' + esc(f.lineText) + '</div>';
+    html += '<div class="dtabs">';
+    html += '<button class="dtab active" onclick="dtab(event,\'' + uid + '\',\'desc\')">📋 What is Wrong</button>';
+    html += '<button class="dtab" onclick="dtab(event,\'' + uid + '\',\'fix\')">🔧 How to Fix</button>';
+    html += '</div>';
+    html += '<div id="' + uid + '_desc" class="dcontent active">' + esc(f.desc) + '</div>';
+    html += '<div id="' + uid + '_fix" class="dcontent">';
+    html += '<div class="fixbox">💡 ' + esc(f.fix.sum) + '</div>';
+    html += '<div class="steps">' + steps + '</div>';
+    html += '<div class="codeblocks">';
+    html += '<div><div class="cblabel bad">✗ VULNERABLE</div><pre class="pre-bad">' + esc(f.fix.bad) + '</pre></div>';
+    html += '<div><div class="cblabel good">✓ FIXED</div><pre class="pre-good">' + esc(f.fix.good) + '</pre></div>';
+    html += '</div></div></div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function toggle(uid) {
+  document.getElementById(uid).classList.toggle('open');
+}
+
+function dtab(ev, uid, tab) {
+  ev.stopPropagation();
+  var detail = document.getElementById(uid).querySelector('.fdetail');
+  detail.querySelectorAll('.dtab').forEach(function(t){ t.classList.remove('active'); });
+  detail.querySelectorAll('.dcontent').forEach(function(c){ c.classList.remove('active'); });
+  ev.target.classList.add('active');
+  document.getElementById(uid + '_' + tab).classList.add('active');
+}
+
+// ---- HELPERS ----
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showSection(id) {
+  var ids = ['secUpload','secScanning','secResults'];
+  for (var i = 0; i < ids.length; i++) {
+    document.getElementById(ids[i]).classList.remove('visible');
+  }
+  document.getElementById(id).classList.add('visible');
+}
+
+function resetAll() {
+  fileContent = '';
+  allFindings = [];
+  currentFilter = 'ALL';
+  currentTab = 'upload';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('pasteArea').value = '';
+  document.getElementById('upIcon').textContent = '📄';
+  document.getElementById('upLabel').textContent = 'Drop file or click to browse';
+  document.getElementById('upLabel').style.color = '#667788';
+  document.getElementById('upHint').textContent = 'Any file type supported';
+  document.getElementById('dropzone').className = 'upload-zone';
+  switchTab('upload');
+  showSection('secUpload');
+}
+</script>
+</body>
+</html>
